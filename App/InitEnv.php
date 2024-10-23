@@ -1,19 +1,19 @@
 <?php
 
-// Load .env file
-namespace App;
-require_once "../vendor/autoload.php";
+// InitEnv.php
+
+namespace ZenithPHP\App;
 
 use Dotenv\Dotenv;
 
 class InitEnv
 {
-
     public static function load(): void
     {
         // This loads the .env file located in the current directory (__DIR__)
         $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
         $dotenv->load();
+
         // DB info using $_ENV
         define('DB_HOST', $_ENV['DB_HOST']);
         define('DB_USER', $_ENV['DB_USER']);

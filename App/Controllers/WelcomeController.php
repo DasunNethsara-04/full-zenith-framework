@@ -1,8 +1,10 @@
 <?php
 
-namespace Controller;
+namespace ZenithPHP\App\Controllers;
 
-use Controller\Controller;
+
+
+use ZenithPHP\Core\Controller\Controller;
 
 class WelcomeController extends Controller
 {

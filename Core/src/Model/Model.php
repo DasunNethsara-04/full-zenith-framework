@@ -1,8 +1,6 @@
 <?php
 
-namespace Model;
-
-use PDO;
+namespace ZenithPHP\Core\src\Model;
 
 abstract class Model
 {

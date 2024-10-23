@@ -15,9 +15,11 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "App/",
-            "Controller\\": "Controller/",
-            "Model\\": "Model/"
+            "ZenithPHP\\App\\": "App/",
+            "ZenithPHP\\App\\Controllers\\": "App/Controllers/",
+            "ZenithPHP\\Model\\": "App/Models/",
+            "ZenithPHP\\Core\\": "Core/src/",
+            "ZenithPHP\\Config\\": "Config/"
         }
     }
 }

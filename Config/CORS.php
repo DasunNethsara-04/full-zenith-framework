@@ -1,6 +1,6 @@
 <?php
 
-namespace Config;
+namespace ZenithPHP\Config;
 
 class CORS
 {
