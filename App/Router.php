@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace ZenithPHP\App;
 
 class Router
 {
@@ -26,7 +26,8 @@ class Router
                 $controller(...$matches);
             } else {
                 // Use the fully qualified namespace for the controller
-                $controllerClass = 'Controller\\' . $controller;
+                $controllerClass = 'ZenithPHP\\App\\Controllers\\' . $controller;
+
                 $controllerInstance = new $controllerClass;
 
                 if (method_exists($controllerInstance, $action)) {
