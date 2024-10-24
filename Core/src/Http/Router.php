@@ -1,6 +1,6 @@
 <?php
 
-namespace ZenithPHP\App;
+namespace ZenithPHP\Core\Http;
 
 class Router
 {

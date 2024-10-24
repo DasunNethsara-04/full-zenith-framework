@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Includes;
+namespace ZenithPHP\Core\Includes;
 
 use Random\RandomException;
 
