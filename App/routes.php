@@ -3,8 +3,8 @@
 namespace ZenithPHP\App;
 
 use ZenithPHP\Core\Http\InitEnv;
-use ZenithPHP\Core\Http\Router;
-
 InitEnv::load();
-// Correct namespace for Router
+
+
+use ZenithPHP\Core\Http\Router;
 Router::get('/', 'WelcomeController', 'index');

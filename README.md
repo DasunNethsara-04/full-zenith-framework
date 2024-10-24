@@ -27,7 +27,7 @@ To get started with ZenithPHP, follow the instructions below:
 
 2. Navigate to the project directory:
     ```bash
-    cd zenithphp
+    cd full-zenith-framework
     ```
 
 3. Install dependencies using Composer:
@@ -49,6 +49,7 @@ To get started with ZenithPHP, follow the instructions below:
 ## Folder Structure
 
 - **App/**: Contains the core application files.
+- **Core/**: The framework's core classes and functions.
 - **Controller/**: Houses all controllers for handling requests.
 - **Model/**: Where the application models are defined.
 - **View/**: Contains all view files (HTML/PHP templates).
@@ -59,21 +60,24 @@ To get started with ZenithPHP, follow the instructions below:
 
 To create your first route:
 
-1. Open `App/Init.php` and define your route:
+1. Open `App/routes.php` and define your route:
     ```php
-    Router::get('/welcome', 'WelcomeController', 'index');
+    use ZenithPHP\Core\Http\Router;
+    Router::get('/hello', 'WelcomeController', 'index');
     ```
 
-2. Create a new controller inside `Controller/WelcomeController.php`:
-    ```php
-    namespace App\Controller;
+   2. Create a new controller (*WelcomeController.php*) inside `App/Controllers/`:
+       ```php
+       use ZenithPHP\Core\Controller\Controller;
 
-    class WelcomeController {
-        public function index() {
+      class WelcomeController extends Controller
+      {
+         public function index()
+         {
             $this->view('welcome');
-        }
-    }
-    ```
+         }
+      }
+       ```
 
 3. Now, create a new view file inside `View/welcome.php`:
     ```html
