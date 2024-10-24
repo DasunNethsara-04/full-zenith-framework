@@ -66,18 +66,18 @@ To create your first route:
     Router::get('/hello', 'WelcomeController', 'index');
     ```
 
-   2. Create a new controller (*WelcomeController.php*) inside `App/Controllers/`:
-       ```php
-       use ZenithPHP\Core\Controller\Controller;
+2. Create a new controller (*WelcomeController.php*) inside `App/Controllers/`:
+    ```php
+    use ZenithPHP\Core\Controller\Controller;
 
-      class WelcomeController extends Controller
+   class WelcomeController extends Controller
+   {
+      public function index()
       {
-         public function index()
-         {
-            $this->view('welcome');
-         }
+         $this->view('welcome');
       }
-       ```
+   }
+    ```
 
 3. Now, create a new view file inside `View/welcome.php`:
     ```html

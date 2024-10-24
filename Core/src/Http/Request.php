@@ -1,6 +1,6 @@
 <?php
 
-namespace ZenithPHP\Core\src\Http;
+namespace ZenithPHP\Core\Http;
 
 class Request
 {
