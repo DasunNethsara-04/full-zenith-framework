@@ -1,0 +1,103 @@
+<?php
+
+namespace ZenithPHP;
+
+use ZenithPHP\Core\Controller\Controller;
+use ZenithPHP\Core\Model\Model;
+
+class CLI
+{
+    protected array $arguments;
+
+    public function __construct($argv)
+    {
+        $this->arguments = $argv;
+        $this->handle();
+    }
+
+    protected function handle()
+    {
+        $command = $this->arguments[1] ?? null;
+
+        switch ($command) {
+            case 'make:controller':
+                $this->makeController();
+                break;
+            case 'make:model':
+                $this->makeModel();
+                break;
+            case 'run':
+                $this->runProject();
+                break;
+            default:
+                echo "Invalid command. Use 'make:controller <ControllerName>', 'make:model <ModelName>', or 'run'.\n";
+                break;
+        }
+    }
+
+    protected function makeController()
+    {
+        $controllerName = $this->arguments[2] ?? null;
+        if (!$controllerName) {
+            echo "Enter the name of the controller: ";
+            $controllerName = trim(fgets(STDIN));
+        }
+
+        $controllerTemplate = "<?php\n\nnamespace ZenithPHP\App\Controllers;\n\nuse ZenithPHP\Core\Controller\Controller;\n\nclass {$controllerName} extends Controller\n{\n\n}\n";
+
+        $path = "App/Controllers/{$controllerName}.php";
+        if (!file_exists($path)) {
+            file_put_contents($path, $controllerTemplate);
+            echo "Controller '{$controllerName}' created successfully.\n";
+        } else {
+            echo "Controller '{$controllerName}' already exists.\n";
+        }
+    }
+
+    protected function makeModel()
+    {
+        $modelName = $this->arguments[2] ?? null;
+        if (!$modelName) {
+            echo "Enter the name of the model: ";
+            $modelName = trim(fgets(STDIN));
+        }
+
+        $modelTemplate = "<?php\n\nnamespace ZenithPHP\App\Models;\n\nuse ZenithPHP\Core\Model\Model;\n\nclass {$modelName} extends Model\n{\n    protected string \$table_name = '" . strtolower($modelName) . "s';\n}\n";
+
+        $path = "App/Models/{$modelName}.php";
+        if (!file_exists($path)) {
+            file_put_contents($path, $modelTemplate);
+            echo "Model '{$modelName}' created successfully.\n";
+        } else {
+            echo "Model '{$modelName}' already exists.\n";
+        }
+    }
+
+    protected function runProject()
+    {
+        $port = 8000;
+        $publicPath = __DIR__ . '/Public';
+
+        echo "Starting server on http://localhost:$port\n";
+        chdir($publicPath);
+
+        // Use a router script to handle static file requests
+        $router = <<<PHP
+    <?php
+    if (php_sapi_name() === 'cli-server') {
+        // Serve the requested resource as-is if it exists
+        \$filePath = __DIR__ . parse_url(\$_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        if (file_exists(\$filePath) && !is_dir(\$filePath)) {
+            return false;
+        }
+    }
+    require 'index.php';
+    PHP;
+
+        file_put_contents("$publicPath/router.php", $router);
+        exec("php -S localhost:$port router.php");
+    }
+
+}
+
+new CLI($argv);
