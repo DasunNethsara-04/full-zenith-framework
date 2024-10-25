@@ -77,13 +77,21 @@ class CLI
     {
         $port = 8000;
         $publicPath = __DIR__ . '/Public';
+        $routerPath = "$publicPath/router.php";
+
+        // Check if the Public directory exists
+        if (!is_dir($publicPath)) {
+            echo "Error: The Public directory does not exist at the expected path: $publicPath\n";
+            return;
+        }
 
         echo "Starting server on http://localhost:$port\n";
-        chdir($publicPath);
+        chdir($publicPath); // Change to the Public directory
 
-        // Use a router script to handle static file requests
+        // Create the router script
         $router = <<<PHP
     <?php
+    // DO NOT DELETE THIS FILE...
     if (php_sapi_name() === 'cli-server') {
         // Serve the requested resource as-is if it exists
         \$filePath = __DIR__ . parse_url(\$_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -94,10 +102,17 @@ class CLI
     require 'index.php';
     PHP;
 
-        file_put_contents("$publicPath/router.php", $router);
+        file_put_contents($routerPath, $router);
+
+        // Register shutdown function to delete the router.php
+        register_shutdown_function(function() use ($routerPath) {
+            @unlink($routerPath);
+            echo "Temporary router file deleted.\n";
+        });
+
+        // Start the PHP built-in server
         exec("php -S localhost:$port router.php");
     }
-
 }
 
 new CLI($argv);

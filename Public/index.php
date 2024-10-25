@@ -1,4 +1,5 @@
 <?php
 
-require_once '../vendor/autoload.php'; // Ensure this is called first
-require_once '../App/routes.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+require_once __DIR__ . '/../App/routes.php';
