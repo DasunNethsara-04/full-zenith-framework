@@ -41,7 +41,7 @@ To get started with ZenithPHP, follow the instructions below:
 
 5. Start your local development server:
     ```bash
-    php -S localhost:8000 -t Public/
+    php cli run
     ```
 
 6. Visit `http://localhost:8000` in your browser to see the landing page.
@@ -49,12 +49,14 @@ To get started with ZenithPHP, follow the instructions below:
 ## Folder Structure
 
 - **App/**: Contains the core application files.
+- **Config/**: Configuration files like CORS for the application.
 - **Core/**: The framework's core classes and functions.
-- **Controller/**: Houses all controllers for handling requests.
-- **Model/**: Where the application models are defined.
 - **View/**: Contains all view files (HTML/PHP templates).
 - **Public/**: The main entry point for the application and assets (JS, CSS, images).
-- **routes.php**: Defines all your application's routes.
+- **.env**: Environment variables for the application.
+- **.env.example**: Example environment variables file.
+- **composer.json**: Composer dependencies file.
+- **cli**: Command-line interface for running the application and create models and controllers.
 
 ## How to Get Started
 
