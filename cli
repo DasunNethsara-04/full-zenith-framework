@@ -2,14 +2,21 @@
 
 namespace ZenithPHP;
 
-use ZenithPHP\Core\Controller\Controller;
-use ZenithPHP\Core\Model\Model;
+use ZenithPHP\Core\Database\Migration;
+use ZenithPHP\Core\Database\Schema;
+use ZenithPHP\Core\Database\Database;
+use ZenithPHP\Core\Http\InitEnv;
+
+// Autoload necessary classes and environment configurations
+require_once 'vendor/autoload.php';
+require_once 'Core/src/Database/Migration.php';
+require_once 'Core/src/Database/Schema.php';
 
 class CLI
 {
     protected array $arguments;
 
-    public function __construct($argv)
+    public function __construct(array $argv)
     {
         $this->arguments = $argv;
         $this->handle();
@@ -19,57 +26,129 @@ class CLI
     {
         $command = $this->arguments[1] ?? null;
 
-        switch ($command) {
-            case 'make:controller':
-                $this->makeController();
-                break;
-            case 'make:model':
-                $this->makeModel();
-                break;
-            case 'run':
-                $this->runProject();
-                break;
-            default:
-                echo "Invalid command. Use 'make:controller <ControllerName>', 'make:model <ModelName>', or 'run'.\n";
-                break;
+        $commands = [
+            'make:controller' => 'makeController',
+            'make:model' => 'makeModel',
+            'make:migration' => 'makeMigration',
+            'migrate' => 'runMigrations',
+            'migrate:rollback' => 'rollbackMigrations',
+            'migrate:fresh' => 'migrateFresh',
+            'run' => 'runProject',
+        ];
+
+        if (array_key_exists($command, $commands)) {
+            $this->{$commands[$command]}();
+        } else {
+            echo "Invalid command. Use 'make:controller', 'make:model', 'make:migration', 'migrate', 'migrate:rollback', or 'run'.\n";
         }
     }
 
     protected function makeController()
     {
-        $controllerName = $this->arguments[2] ?? null;
-        if (!$controllerName) {
-            echo "Enter the name of the controller: ";
-            $controllerName = trim(fgets(STDIN));
-        }
-
-        $controllerTemplate = "<?php\n\nnamespace ZenithPHP\App\Controllers;\n\nuse ZenithPHP\Core\Controller\Controller;\n\nclass {$controllerName} extends Controller\n{\n\n}\n";
-
+        $controllerName = $this->arguments[2] ?? $this->prompt("Enter the name of the controller: ");
         $path = "App/Controllers/{$controllerName}.php";
-        if (!file_exists($path)) {
-            file_put_contents($path, $controllerTemplate);
-            echo "Controller '{$controllerName}' created successfully.\n";
-        } else {
+
+        if (file_exists($path)) {
             echo "Controller '{$controllerName}' already exists.\n";
+            return;
         }
+
+        $template = "<?php\n\nnamespace ZenithPHP\App\Controllers;\n\nuse ZenithPHP\Core\Controller\Controller;\n\nclass {$controllerName} extends Controller\n{\n}\n";
+        file_put_contents($path, $template);
+        echo "Controller '{$controllerName}' created successfully.\n";
     }
 
     protected function makeModel()
     {
-        $modelName = $this->arguments[2] ?? null;
-        if (!$modelName) {
-            echo "Enter the name of the model: ";
-            $modelName = trim(fgets(STDIN));
+        $modelName = $this->arguments[2] ?? $this->prompt("Enter the name of the model: ");
+        $path = "App/Models/{$modelName}.php";
+
+        if (file_exists($path)) {
+            echo "Model '{$modelName}' already exists.\n";
+            return;
         }
 
-        $modelTemplate = "<?php\n\nnamespace ZenithPHP\App\Models;\n\nuse ZenithPHP\Core\Model\Model;\n\nclass {$modelName} extends Model\n{\n    protected string \$table_name = '" . strtolower($modelName) . "s';\n}\n";
+        $template = "<?php\n\nnamespace ZenithPHP\App\Models;\n\nuse ZenithPHP\Core\Model\Model;\n\nclass {$modelName} extends Model\n{\n    protected string \$table_name = '" . strtolower($modelName) . "s';\n}\n";
+        file_put_contents($path, $template);
+        echo "Model '{$modelName}' created successfully.\n";
+    }
 
-        $path = "App/Models/{$modelName}.php";
-        if (!file_exists($path)) {
-            file_put_contents($path, $modelTemplate);
-            echo "Model '{$modelName}' created successfully.\n";
-        } else {
-            echo "Model '{$modelName}' already exists.\n";
+    protected function makeMigration()
+    {
+        $migrationName = $this->arguments[2] ?? $this->prompt("Enter the name of the migration: ");
+        $timestamp = date('Y_m_d_His');
+        $file = "Migrations/_{$timestamp}_{$migrationName}.php";
+
+        if (!file_exists('Migrations')) mkdir('Migrations', 0755, true);
+
+        $template = "<?php\n\nnamespace ZenithPHP\Migrations;\n\nuse ZenithPHP\Core\Database\Migration;\nuse ZenithPHP\Core\Database\Schema;\n\nclass _{$timestamp}_{$migrationName} extends Migration\n{\n    public function up()\n    {\n        Schema::create('{$migrationName}', function (Schema \$table) {\n            \$table->id();\n            // Add columns\n        });\n    }\n\n    public function down()\n    {\n        Schema::drop('{$migrationName}');\n    }\n}\n";
+
+        file_put_contents($file, $template);
+        echo "Migration '{$migrationName}' created successfully at '{$file}'.\n";
+    }
+
+    protected function runMigrations()
+    {
+//        $this->loadEnv();
+        $migrationFiles = glob('Migrations/*.php');
+
+        if (empty($migrationFiles)) {
+            echo "No migration files found.\n";
+            return;
+        }
+
+        foreach ($migrationFiles as $file) {
+            require_once $file;
+            $className = 'ZenithPHP\Migrations\\' . basename($file, '.php');
+
+            if (class_exists($className)) {
+                (new $className)->up();
+                echo "Migration '{$className}' executed successfully.\n";
+            } else {
+                echo "Class '{$className}' not found in '{$file}'.\n";
+            }
+        }
+    }
+
+    protected function rollbackMigrations()
+    {
+        $this->loadEnv();
+        $migrationFiles = array_reverse(glob('Migrations/*.php'));
+
+        if (empty($migrationFiles)) {
+            echo "No migration files found.\n";
+            return;
+        }
+
+        foreach ($migrationFiles as $file) {
+            require_once $file;
+            $className = 'ZenithPHP\Migrations\\' . basename($file, '.php');
+
+            if (class_exists($className)) {
+                (new $className)->down();
+                echo "Rolled back: " . basename($file) . "\n";
+            } else {
+                echo "Class '{$className}' not found in '{$file}'.\n";
+            }
+        }
+    }
+
+    protected function migrateFresh()
+    {
+        // \ZenithPHP\Core\Http\InitEnv::load();
+        $this->loadEnv();
+        $this->dropAllTables();
+        $this->runMigrations();
+    }
+
+    protected function dropAllTables()
+    {
+        $db = Database::connect();
+        $tables = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
+
+        foreach ($tables as $table) {
+            $db->exec("DROP TABLE IF EXISTS `{$table}`");
+            echo "Dropped table: {$table}\n";
         }
     }
 
@@ -79,39 +158,25 @@ class CLI
         $publicPath = __DIR__ . '/Public';
         $routerPath = "$publicPath/router.php";
 
-        // Check if the Public directory exists
-        if (!is_dir($publicPath)) {
-            echo "Error: The Public directory does not exist at the expected path: $publicPath\n";
-            return;
-        }
-
         echo "Starting server on http://localhost:$port\n";
-        chdir($publicPath); // Change to the Public directory
+        chdir($publicPath);
 
-        // Create the router script
-        $router = <<<PHP
-    <?php
-    // DO NOT DELETE THIS FILE...
-    if (php_sapi_name() === 'cli-server') {
-        // Serve the requested resource as-is if it exists
-        \$filePath = __DIR__ . parse_url(\$_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        if (file_exists(\$filePath) && !is_dir(\$filePath)) {
-            return false;
-        }
+        file_put_contents($routerPath, "<?php if (php_sapi_name() === 'cli-server') { \$filePath = __DIR__ . parse_url(\$_SERVER['REQUEST_URI'], PHP_URL_PATH); if (file_exists(\$filePath) && !is_dir(\$filePath)) return false; } require 'index.php';");
+
+        register_shutdown_function(fn() => unlink($routerPath) && print("Temporary router file deleted.\n"));
+
+        passthru("php -S localhost:$port router.php");
     }
-    require 'index.php';
-    PHP;
 
-        file_put_contents($routerPath, $router);
+    private function loadEnv()
+    {
+        InitEnv::load();
+    }
 
-        // Register shutdown function to delete the router.php
-        register_shutdown_function(function() use ($routerPath) {
-            @unlink($routerPath);
-            echo "Temporary router file deleted.\n";
-        });
-
-        // Start the PHP built-in server
-        exec("php -S localhost:$port router.php");
+    private function prompt(string $message): string
+    {
+        echo $message;
+        return trim(fgets(STDIN));
     }
 }
 

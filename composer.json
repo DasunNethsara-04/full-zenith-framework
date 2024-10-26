@@ -19,7 +19,8 @@
             "ZenithPHP\\App\\Controllers\\": "App/Controllers/",
             "ZenithPHP\\Model\\": "App/Models/",
             "ZenithPHP\\Core\\": "Core/src/",
-            "ZenithPHP\\Config\\": "Config/"
+            "ZenithPHP\\Config\\": "Config/",
+            "ZenithPHP\\Migrations\\": "Migrations/"
         }
     }
 }
