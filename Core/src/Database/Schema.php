@@ -92,21 +92,27 @@ class Schema
 
         foreach ($this->columns as $column) {
             $columnDefinition = (string)$column;
-            // Move foreign key constraints to a separate array
-            if (str_contains($columnDefinition, 'REFERENCES')) {
+
+            // Separate foreign key constraints into the $constraints array
+            if (str_contains($columnDefinition, 'FOREIGN KEY')) {
                 $constraints[] = $columnDefinition;
             } else {
                 $columnsSql[] = $columnDefinition;
             }
         }
 
+        // Construct the SQL statement
         $sql = "CREATE TABLE IF NOT EXISTS `{$this->tableName}` (" . implode(", ", $columnsSql);
 
+        // Add foreign key constraints at the end of the column definitions
         if (!empty($constraints)) {
             $sql .= ", " . implode(", ", $constraints);
         }
 
         $sql .= ");";
+
+        // Debugging output
+        echo "Executing SQL: $sql\n"; // Add this line to print the SQL
         Database::execute($sql);
     }
 }
