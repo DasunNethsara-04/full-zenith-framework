@@ -24,5 +24,9 @@ class InitEnv
         define('APP_NAME', $_ENV['APP_NAME']);
         define('APP_URL', $_ENV['APP_URL']);
         define('APP_VERSION', $_ENV['APP_VERSION']);
+
+        // JWT info using $_ENV
+        define('JWT_SECRET', $_ENV['JWT_SECRET']);
+        define('JWT_ISSUER', $_ENV['JWT_ISSUER']);
     }
 }

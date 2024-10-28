@@ -2,6 +2,7 @@
 
 namespace ZenithPHP\Core\Includes;
 
+use Firebase\JWT\JWT;
 use Random\RandomException;
 
 class Security
@@ -14,6 +15,18 @@ class Security
     public static function verify_password(string $password, string $hash): bool
     {
         return password_verify($password, $hash);
+    }
+
+    public static function generateJWTToken(string|int $userId, string $issuer, string $secretKey, int $expiry = 3600): string
+    {
+        $payload = [
+            'iss' => $issuer,
+            'sub' => $userId,
+            'iat' => time(),
+            'exp' => time() + $expiry,
+        ];
+
+        return JWT::encode($payload, $secretKey, 'HS256');
     }
 
     /**
