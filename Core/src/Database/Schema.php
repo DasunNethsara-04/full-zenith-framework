@@ -22,31 +22,91 @@ class Schema
         Database::execute($sql);
     }
 
-    public function id(): void
+    public function id(): Column
     {
-        $this->columns[] = "`{$this->primaryKey}` INT AUTO_INCREMENT PRIMARY KEY";
+        $column = new Column($this->primaryKey, 'INT AUTO_INCREMENT PRIMARY KEY');
+        $this->columns[] = $column;
+        return $column;
     }
 
-    public function string($name, $length = 255): void
+    public function string(string $name, int $length = 255): Column
     {
-        $this->columns[] = "`$name` VARCHAR($length)";
+        $column = new Column($name, "VARCHAR($length)");
+        $this->columns[] = $column;
+        return $column;
     }
 
-    public function integer($name): void
+    public function integer(string $name, int $length = 11): Column
     {
-        $this->columns[] = "`$name` INT";
+        $column = new Column($name, "INT($length)");
+        $this->columns[] = $column;
+        return $column;
     }
 
-    public function timestamps(): void
+    public function text(string $name): Column
     {
-        $this->columns[] = "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-        $this->columns[] = "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+        $column = new Column($name, "TEXT");
+        $this->columns[] = $column;
+        return $column;
+    }
+
+    public function decimal(string $name, int $length = 10, int $decimals = 2): Column
+    {
+        $column = new Column($name, "DECIMAL($length, $decimals)");
+        $this->columns[] = $column;
+        return $column;
+    }
+
+    public function boolean(string $name): Column
+    {
+        $column = new Column($name, "TINYINT(1)");
+        $this->columns[] = $column;
+        return $column;
+    }
+
+    public function timestamp(string $name): Column
+    {
+        $column = new Column($name, "TIMESTAMP");
+        $this->columns[] = $column;
+        return $column;
+    }
+
+    public function date(string $name): Column
+    {
+        $column = new Column($name, "DATE");
+        $this->columns[] = $column;
+        return $column;
+    }
+
+    public function foreignId(string $name): Column
+    {
+        $column = new Column($name, "INT");
+        $this->columns[] = $column;
+        return $column;
     }
 
     protected function executeCreate(): void
     {
-        $columnsSql = implode(", ", $this->columns);
-        $sql = "CREATE TABLE IF NOT EXISTS `{$this->tableName}` ({$columnsSql});";
+        $columnsSql = [];
+        $constraints = [];
+
+        foreach ($this->columns as $column) {
+            $columnDefinition = (string)$column;
+            // Move foreign key constraints to a separate array
+            if (str_contains($columnDefinition, 'REFERENCES')) {
+                $constraints[] = $columnDefinition;
+            } else {
+                $columnsSql[] = $columnDefinition;
+            }
+        }
+
+        $sql = "CREATE TABLE IF NOT EXISTS `{$this->tableName}` (" . implode(", ", $columnsSql);
+
+        if (!empty($constraints)) {
+            $sql .= ", " . implode(", ", $constraints);
+        }
+
+        $sql .= ");";
         Database::execute($sql);
     }
 }
