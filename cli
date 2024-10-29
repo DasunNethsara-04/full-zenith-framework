@@ -89,7 +89,7 @@ class CLI
 
     protected function runMigrations()
     {
-//        $this->loadEnv();
+        $this->loadEnv();
         $migrationFiles = glob('Migrations/*.php');
 
         if (empty($migrationFiles)) {
