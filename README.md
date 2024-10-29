@@ -14,7 +14,6 @@ foundation to build modern PHP applications with ease.
 - **Simple Namespacing**: Eliminate the need for `require_once` with proper namespacing.
 - **Security Built-in**: Features like password hashing and input validation to keep your app secure.
 - **Easy to Extend**: Customize the framework to suit your application’s needs with minimal effort.
-- **Bootstrap-Ready**: Pre-included Bootstrap for quick UI prototyping.
 
 ## Installation
 
