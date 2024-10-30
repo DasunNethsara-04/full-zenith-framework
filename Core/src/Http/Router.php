@@ -2,6 +2,10 @@
 
 namespace ZenithPHP\Core\Http;
 
+use ZenithPHP\Core\Http\Request;
+use ZenithPHP\Core\Http\Response;
+use ReflectionMethod;
+
 class Router
 {
     public static function handle($method = 'GET', $path = '/', $controller = '', $action = null)
@@ -27,12 +31,38 @@ class Router
             } else {
                 // Use the fully qualified namespace for the controller
                 $controllerClass = 'ZenithPHP\\App\\Controllers\\' . $controller;
-
                 $controllerInstance = new $controllerClass;
 
                 if (method_exists($controllerInstance, $action)) {
-                    // Pass dynamic parameters to the controller method
-                    $controllerInstance->$action(...$matches);
+                    // Reflection to get method parameters
+                    $reflection = new ReflectionMethod($controllerInstance, $action);
+                    $parameters = [];
+
+                    // Loop through each parameter to check for dependency types
+                    foreach ($reflection->getParameters() as $param) {
+                        $paramType = $param->getType();
+
+                        // Check if the parameter has a class type and inject dependencies
+                        if ($paramType && !$paramType->isBuiltin()) {
+                            $className = $paramType->getName();
+                            if ($className === Request::class) {
+                                $parameters[] = new Request();
+                            } elseif ($className === Response::class) {
+                                $parameters[] = new Response();
+                            } else {
+                                // Handle additional dependencies or throw an error
+                                throw new \Exception("Cannot resolve dependency {$className}");
+                            }
+                        } else {
+                            // For any route parameters, add them in order
+                            if (!empty($matches)) {
+                                $parameters[] = array_shift($matches);
+                            }
+                        }
+                    }
+
+                    // Invoke the controller method with dependencies injected
+                    $reflection->invokeArgs($controllerInstance, $parameters);
                 } else {
                     // Handle case where method doesn't exist
                     echo "Error: Method '$action' not found in controller '$controllerClass'";

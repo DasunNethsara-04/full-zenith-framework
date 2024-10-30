@@ -87,6 +87,56 @@ To create your first route:
 
 4. Visit `http://localhost:8000/welcome` to see the result.
 
+
+## Working with APIs
+Now you can create APIs with ZenithPHP. Here's how you can create a simple API:
+
+1. First, create a new route in `App/routes.php`:
+    ```php
+    use ZenithPHP\Core\Http\Router;
+    Router::get('/api/users', 'UserController', 'index');
+    ```
+
+2. Create a new model using the CLI tool:
+    ```bash
+    php cli make:model User
+    ```
+
+3. Implement the model method to fetch data from the database:
+    ```php
+    use ZenithPHP\Core\Model\Model;
+
+    class User extends Model
+    {
+        protected string $table_name = 'users';
+    }
+
+
+4. Create a new controller. For that, you can use the CLI tool:
+    ```bash
+    php cli make:controller UserController
+    ```
+
+5. Implement the controller method to return JSON data:
+    ```php
+    use ZenithPHP\Core\Controller\Controller;
+    use ZenithPHP\Core\Http\Response;
+    use ZenithPHP\Core\Http\Request;
+    use ZenithPHP\App\Models\User;
+
+    class WelcomeController extends Controller
+    {
+        public function index(Request $request, Response $response)
+        {
+            $user = new User($this->pdo);
+            $allUsers = $user->getAll();
+            $response->json(['status' => 'success', 'data' => $allUsers]);
+        }
+    }
+    ```
+
+6. Visit `http://localhost:8000/api/users` to see the JSON response.
+
 ## Security Features
 
 - **Password Hashing**: Built-in password hashing methods for user authentication.
