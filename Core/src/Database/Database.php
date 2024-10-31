@@ -5,10 +5,25 @@ namespace ZenithPHP\Core\Database;
 use PDO;
 use PDOException;
 
+/**
+ * Class for managing the database connection and executing SQL statements.
+ * 
+ * @package ZenithPHP\Core\Database
+ */
 class Database
 {
+    /**
+     * Holds the singleton PDO connection instance.
+     * 
+     * @var PDO|null
+     */
     protected static ?PDO $connection = null;
 
+    /**
+     * Establishes a PDO connection if one doesn't already exist.
+     * 
+     * @return PDO The PDO connection instance.
+     */
     public static function connect(): PDO
     {
         if (self::$connection === null) {
@@ -31,6 +46,13 @@ class Database
         return self::$connection;
     }
 
+    /**
+     * Executes a given SQL statement using the established PDO connection.
+     * 
+     * @param string $sql The SQL statement to execute.
+     * 
+     * @return void
+     */
     public static function execute($sql): void
     {
         $connection = self::connect();
