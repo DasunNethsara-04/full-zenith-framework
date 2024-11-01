@@ -9,113 +9,109 @@ use ReflectionMethod;
 /**
  * Class Router
  *
- * Handles routing for various HTTP methods, supports dependency injection for controller methods,
- * and applies middleware to specified routes.
+ * Handles routing for different HTTP methods, supports dependency injection, and applies middleware.
  *
  * @package ZenithPHP\Core\Http
  */
 class Router
 {
-    /**
-     * @var array Stores registered routes, including HTTP method, path, controller, action, and middleware.
-     */
-    protected static array $routes = [];
+    protected static array $routes = []; // Store registered routes
 
     /**
-     * Matches a request with the specified HTTP method and URI to a registered route, applies middleware,
-     * injects dependencies, and invokes the specified controller and action.
+     * Handles HTTP requests, applies middleware, and invokes the specified controller/action.
      *
-     * @param string $method The HTTP method for the route (e.g., GET, POST).
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
-     * @return bool Returns false if the method or URI does not match, otherwise it invokes the matched action.
-     * @throws \Exception If a dependency cannot be resolved for injection.
+     * @param string $method The HTTP method (GET, POST, etc.)
+     * @param string $path The route path
+     * @param string|callable $controller The controller name or callable
+     * @param string|null $action The action method to call
+     * @param array $middleware Array of middleware classes to apply
+     * @return mixed Response from the invoked controller/action
      */
     public static function handle($method, $path, $controller, $action = null, $middleware = [])
     {
-        $currentMethod = $_SERVER['REQUEST_METHOD'];
-        $currentUri = strtok($_SERVER['REQUEST_URI'], '?');
+        $currentMethod = $_SERVER['REQUEST_METHOD']; // Get the current HTTP method
+        $currentUri = strtok($_SERVER['REQUEST_URI'], '?'); // Get the current URI without query string
 
         // Store the route with middleware
         self::$routes[] = compact('method', 'path', 'controller', 'action', 'middleware');
 
+        // Check if the current request method matches the route method
         if ($currentMethod !== $method) {
-            return false;
+            return false; // Method mismatch, do not process further
         }
 
-        $pattern = preg_replace('/\{(\w+)\}/', '(\d+)', $path); // Convert path to regex
-        $pattern = '#^' . $pattern . '$#siD';
+        // Convert route path to a regex pattern
+        $pattern = preg_replace('/\{(\w+)\}/', '(\d+)', $path);
+        $pattern = '#^' . $pattern . '$#siD'; // Create a regex pattern for the URI
 
+        // Check if the current URI matches the pattern
         if (preg_match($pattern, $currentUri, $matches)) {
-            array_shift($matches);
+            array_shift($matches); // Remove the first element (full match) from the matches array
 
-            // Create instances of Request and Response
-            $request = new Request();
-            $response = new Response();
+            // Create a closure for the next callable in the middleware chain
+            $next = function ($request, $response) use ($controller, $action, $matches) {
+                // Invoke the controller action
+                if (is_callable($controller)) {
+                    return $controller(...$matches); // Call the controller directly
+                } else {
+                    // Instantiate the controller class
+                    $controllerClass = 'ZenithPHP\\App\\Controllers\\' . $controller;
+                    $controllerInstance = new $controllerClass;
+
+                    // Check if the action method exists in the controller
+                    if (method_exists($controllerInstance, $action)) {
+                        // Use reflection to get method parameters
+                        $reflection = new ReflectionMethod($controllerInstance, $action);
+                        $parameters = [];
+
+                        // Resolve parameters for the action method
+                        foreach ($reflection->getParameters() as $param) {
+                            $paramType = $param->getType();
+                            if ($paramType && !$paramType->isBuiltin()) {
+                                // If parameter is a class type
+                                $className = $paramType->getName();
+                                if ($className === Request::class) {
+                                    $parameters[] = new Request(); // Inject Request instance
+                                } elseif ($className === Response::class) {
+                                    $parameters[] = new Response(); // Inject Response instance
+                                } else {
+                                    throw new \Exception("Cannot resolve dependency {$className}");
+                                }
+                            } else {
+                                // Handle route parameters
+                                if (!empty($matches)) {
+                                    $parameters[] = array_shift($matches);
+                                }
+                            }
+                        }
+
+                        return $reflection->invokeArgs($controllerInstance, $parameters); // Invoke the action with parameters
+                    } else {
+                        echo "Error: Method '$action' not found in controller '$controllerClass'";
+                    }
+                }
+                exit(); // Stop further execution
+            };
 
             // Apply Middleware
             foreach ($middleware as $mw) {
                 $mwInstance = new $mw();
-                if (method_exists($mwInstance, 'handle')) {
-                    // Pass request, response, and the next closure
-                    $next = function ($req, $res) use ($controller, $action, $matches) {
-                        $controllerClass = 'ZenithPHP\\App\\Controllers\\' . $controller;
-                        $controllerInstance = new $controllerClass;
-
-                        // Prepare parameters for the controller action
-                        $parameters = [];
-
-                        if (method_exists($controllerInstance, $action)) {
-                            $reflection = new ReflectionMethod($controllerInstance, $action);
-                            foreach ($reflection->getParameters() as $param) {
-                                $paramType = $param->getType();
-                                if ($paramType && !$paramType->isBuiltin()) {
-                                    $className = $paramType->getName();
-                                    if ($className === Request::class) {
-                                        $parameters[] = $req; // Add the Request object
-                                    } elseif ($className === Response::class) {
-                                        $parameters[] = $res; // Add the Response object
-                                    } else {
-                                        throw new \Exception("Cannot resolve dependency {$className}");
-                                    }
-                                } else {
-                                    if (!empty($matches)) {
-                                        $parameters[] = array_shift($matches);
-                                    }
-                                }
-                            }
-                            // Invoke the controller action with parameters
-                            return $reflection->invokeArgs($controllerInstance, $parameters);
-                        } else {
-                            echo "Error: Method '$action' not found in controller '$controllerClass'";
-                        }
-                        exit();
-                    };
-
-                    // Call the middleware handle method
-                    $result = $mwInstance->handle($request, $response, $next);
-                    if ($result === false) {
-                        return; // Middleware failed, stop processing
-                    }
+                if (method_exists($mwInstance, 'handle') && !$mwInstance->handle(new Request(), new Response(), $next)) {
+                    return false; // Middleware failed
                 }
             }
 
-            // If all middleware passes, call the action directly
-            return $next($request, $response);
+            // If no middleware was applied, call $next directly
+            return $next(new Request(), new Response());
         }
 
-        return false; // No route matched
+        return false; // No match found
     }
 
+    // HTTP Methods
+
     /**
-     * Registers a GET route.
-     *
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
+     * Register a GET route.
      */
     public static function get($path, $controller, $action = null, $middleware = [])
     {
@@ -123,12 +119,7 @@ class Router
     }
 
     /**
-     * Registers a POST route.
-     *
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
+     * Register a POST route.
      */
     public static function post($path, $controller, $action = null, $middleware = [])
     {
@@ -136,12 +127,7 @@ class Router
     }
 
     /**
-     * Registers a PATCH route.
-     *
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
+     * Register a PATCH route.
      */
     public static function patch($path, $controller, $action = null, $middleware = [])
     {
@@ -149,12 +135,7 @@ class Router
     }
 
     /**
-     * Registers a PUT route.
-     *
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
+     * Register a PUT route.
      */
     public static function put($path, $controller, $action = null, $middleware = [])
     {
@@ -162,12 +143,7 @@ class Router
     }
 
     /**
-     * Registers a DELETE route.
-     *
-     * @param string $path The URI pattern to match the route.
-     * @param string|callable $controller The controller class or callable function handling the request.
-     * @param string|null $action The method within the controller to invoke.
-     * @param array $middleware An array of middleware classes to apply to the route.
+     * Register a DELETE route.
      */
     public static function delete($path, $controller, $action = null, $middleware = [])
     {

@@ -2,7 +2,6 @@
 
 namespace ZenithPHP\App;
 
-use ZenithPHP\App\Middleware\TestAuthMiddleware;
 use ZenithPHP\Core\Http\InitEnv;
 
 // Load environment variables
@@ -19,5 +18,3 @@ use ZenithPHP\Core\Http\Router;
 
 // YOUR ROUTES GO HERE
 Router::get('/', 'WelcomeController', 'index');
-
-Router::get('/protected', 'TestController', 'index', [TestAuthMiddleware::class]);
