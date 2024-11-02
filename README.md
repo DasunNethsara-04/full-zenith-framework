@@ -154,7 +154,24 @@ The **Pluto** template engine in ZenithPHP allows you to easily build dynamic vi
 - **Section Definition**: Use `@section` to define a section that can be filled in child templates.
 
 ### Example Syntax
-
+`HomeController.php`
+```php
+class HomeController extends Controller 
+{
+    public function index(Request $request, Response $response)
+    {
+        return view('home', [
+            'username' => 'John Doe',
+            'userRole' => 'admin',
+            'items' => [
+                (object) ['name' => 'Laptop', 'price' => '$999'],
+                (object) ['name' => 'Smartphone', 'price' => '$499'],
+            ]
+        ]);
+    }
+}
+```
+`home.pluto.php`
 ```php
 <!-- Displaying a variable -->
 << $username >>
