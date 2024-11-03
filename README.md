@@ -149,7 +149,7 @@ The **Pluto** template engine in ZenithPHP allows you to easily build dynamic vi
 - **Variable Output**: Use `<< $variable >>` to output PHP variables in the view.
 - **Conditional Statements**: Pluto offers `@if`, `@elseif`, `@else`, and `@endif` directives for conditional rendering.
 - **Looping**: Use `@foreach` and `@endforeach` to iterate over collections.
-- **Comments**: Use `<< // >>` to add comments in your templates.
+- **Comments**: Use `<<// >>` to add comments in your templates.
 - **Yielding Sections**: Use `@yield` to define a section that will be replaced with content from child templates.
 - **Section Definition**: Use `@section` to define a section that can be filled in child templates.
 
